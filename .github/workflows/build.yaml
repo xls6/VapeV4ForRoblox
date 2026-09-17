@@ -16,7 +16,7 @@ jobs:
     - name: Clone destination files
       uses: actions/checkout@v6
       with:
-        repository: 7GrandDadPGN/VapeCompiled
+        repository: xls6/VapeCompiled
         token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
         path: "./VapeCompiled"
 
