@@ -1,6 +1,7 @@
 local KickAll
 local Movement
 local AutoRejoin
+local TargetPlayer
 local didClick = {}
 local lastFling = {}
 local tempList = setmetatable({}, {
@@ -8,6 +9,24 @@ local tempList = setmetatable({}, {
 })
 
 local function getTarget(seat)
+	if TargetPlayer.Value ~= '' then
+		for _, entity in entitylib.List do
+			if (entity.Player.Name:lower() == TargetPlayer.Value:lower() or entity.Player.DisplayName:lower() == TargetPlayer.Value:lower())
+			and select(2, whitelist:get(entity.Player))
+			and entity.Player.Team ~= teams.Neutral
+			and not (entity.Humanoid.Sit and entity.Humanoid.SeatPart.Anchored)
+			and entity.Humanoid.Health > 0
+			and (os.clock() - entity.SpawnTime) > 5 then
+				lastFling[entity.Player.Name] = os.clock()
+				tempList[seat] = entity
+				notif('KickAll', 'Attempted fling: '..entity.Player.Name, 5)
+				return entity
+			end
+		end
+
+		return
+	end
+
 	if tempList[seat] and tempList[seat].Health > 0 and not tempList[seat].Humanoid.Sit then
 		return tempList[seat]
 	end
@@ -132,4 +151,9 @@ Movement = KickAll:CreateToggle({
 })
 AutoRejoin = KickAll:CreateToggle({
 	Name = 'AutoRejoin'
+})
+TargetPlayer = KickAll:CreateTextBox({
+	Name = 'Target player',
+	Placeholder = 'Username or display name',
+	Darker = true
 })
