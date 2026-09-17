@@ -8,20 +8,41 @@ local tempList = setmetatable({}, {
 	__mode = 'k'
 })
 
+local function getPlayerList()
+	local list = {}
+
+	for _, player in playersService:GetPlayers() do
+		if player ~= lplr then
+			table.insert(list, player.Name)
+		end
+	end
+
+	table.sort(list, function(a, b)
+		return a:lower() < b:lower()
+	end)
+		table.insert(list, 1, 'None')
+
+	return list
+end
+
+local function updatePlayerList()
+	TargetPlayer:Change(getPlayerList())
+end
+
 local function getTarget(seat)
-	if TargetPlayer.Value ~= '' then
-		for _, entity in entitylib.List do
-			if (entity.Player.Name:lower() == TargetPlayer.Value:lower() or entity.Player.DisplayName:lower() == TargetPlayer.Value:lower())
-			and select(2, whitelist:get(entity.Player))
-			and entity.Player.Team ~= teams.Neutral
-			and not (entity.Humanoid.Sit and entity.Humanoid.SeatPart.Anchored)
-			and entity.Humanoid.Health > 0
-			and (os.clock() - entity.SpawnTime) > 5 then
-				lastFling[entity.Player.Name] = os.clock()
-				tempList[seat] = entity
-				notif('KickAll', 'Attempted fling: '..entity.Player.Name, 5)
-				return entity
-			end
+	if TargetPlayer.Value ~= 'None' then
+		local player = playersService:FindFirstChild(TargetPlayer.Value)
+		local entity = player and entitylib.getEntity(player)
+		if entity
+		and select(2, whitelist:get(entity.Player))
+		and entity.Player.Team ~= teams.Neutral
+		and not (entity.Humanoid.Sit and entity.Humanoid.SeatPart.Anchored)
+		and entity.Humanoid.Health > 0
+		and (os.clock() - entity.SpawnTime) > 5 then
+			lastFling[entity.Player.Name] = os.clock()
+			tempList[seat] = entity
+			notif('KickAll', 'Attempted fling: '..entity.Player.Name, 5)
+			return entity
 		end
 
 		return
@@ -57,6 +78,10 @@ KickAll = vape.Categories.Blatant:CreateModule({
 	Name = 'KickAll',
 	Function = function(callback)
 		if callback then
+			updatePlayerList()
+			KickAll:Clean(playersService.PlayerAdded:Connect(updatePlayerList))
+			KickAll:Clean(playersService.PlayerRemoving:Connect(updatePlayerList))
+
 			if not vape.Modules.AntiFling.Enabled then
 				vape.Modules.AntiFling:Toggle()
 			end
@@ -152,8 +177,8 @@ Movement = KickAll:CreateToggle({
 AutoRejoin = KickAll:CreateToggle({
 	Name = 'AutoRejoin'
 })
-TargetPlayer = KickAll:CreateTextBox({
+TargetPlayer = KickAll:CreateDropdown({
 	Name = 'Target player',
-	Placeholder = 'Username or display name',
+	List = getPlayerList(),
 	Darker = true
 })
